@@ -30,7 +30,7 @@ class DiceLoss(nn.Module):
     def forward(self, pred, target):
         smooth = 1
 
-        size = target.size(0)
+        size = pred.size(0)
 
         pred_flat = pred.view(size, -1)
         target_flat = target.view(size, -1)

@@ -34,7 +34,7 @@ class EndoScene(Dataset):
                    RandomHorizontalFlip(),
                    RandomVerticalFlip(),
                    RandomRotation(90),
-                   RandomZoom(1.2),
+                   RandomZoom((0.9, 1.1)),
                    #Translation(10),
                    RandomCrop((256, 256)),
                    ToTensor(),

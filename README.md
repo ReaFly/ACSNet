@@ -37,3 +37,22 @@ python test.py  --mode test  --load_ckpt checkpoint
 
 
 
+##  Citation
+
+If you feel this work is helpful, please cite our paper
+
+```
+@inproceedings{zhang2020adaptive,
+  title={Adaptive Context Selection for Polyp Segmentation},
+  author={Zhang, Ruifei and Li, Guanbin and Li, Zhen and Cui, Shuguang and Qian, Dahong and Yu, Yizhou},
+  booktitle={International Conference on Medical Image Computing and Computer-Assisted Intervention},
+  pages={253--262},
+  year={2020},
+  organization={Springer}
+} 
+```
+
+
+
+
+

@@ -102,26 +102,9 @@ class RandomRotation(object):
         return {'image': image, 'label': label}
 
 
-class Rescale(object):
-
-    def __init__(self):
-        self.scale = random.uniform(0.9,1.1)
-
-    def __call__(self, sample):
-        image, label = sample['image'], sample['label']
-      
-        if self.scale:
-            origin_length = image.size[0]
-            new_length = int(origin_length * self.scale)
-            return {'image': image.resize((new_length, new_length), Image.ANTIALIAS),
-                    'label': label.resize((new_length, new_length), Image.ANTIALIAS)}
-
-        return {'image': image, 'label': label}
-
-
 class RandomZoom(object):
-    def __init__(self, zoom):
-        self.zoom = random.uniform(0.8, zoom)
+    def __init__(self, zoom=(0.8, 1.2)):
+        self.min, self.max = zoom[0], zoom[1]
 
     def __call__(self, data):
         image, label = data['image'], data['label']
@@ -130,8 +113,9 @@ class RandomZoom(object):
             image = np.array(image)
             label = np.array(label)
 
-            zoom_image = clipped_zoom(image, self.zoom)
-            zoom_label = clipped_zoom(label, self.zoom)
+            zoom = random.uniform(self.min, self.max)
+            zoom_image = clipped_zoom(image, zoom)
+            zoom_label = clipped_zoom(label, zoom)
 
             zoom_image = Image.fromarray(zoom_image.astype('uint8'), 'RGB')
             zoom_label = Image.fromarray(zoom_label.astype('uint8'), 'L')
@@ -170,13 +154,34 @@ def clipped_zoom(img, zoom_factor, **kwargs):
         top = (h - zh) // 2
         left = (w - zw) // 2
 
-        out = scipy.ndimage.zoom(img[top:top + zh, left:left + zw], zoom_tuple, **kwargs)
+        zoom_in = scipy.ndimage.zoom(img[top:top + zh, left:left + zw], zoom_tuple, **kwargs)
 
-        # `out` might still be slightly larger than `img` due to rounding, so
-        # trim off any extra pixels at the edges
-        trim_top = ((out.shape[0] - h) // 2)
-        trim_left = ((out.shape[1] - w) // 2)
-        out = out[trim_top:trim_top + h, trim_left:trim_left + w]
+        # `zoom_in` might still be slightly different with `img` due to rounding, so
+        # trim off any extra pixels at the edges or zero-padding
+
+        if zoom_in.shape[0] >= h:
+            zoom_top = (zoom_in.shape[0] - h) // 2
+            sh = h
+            out_top = 0
+            oh = h
+        else:
+            zoom_top = 0
+            sh = zoom_in.shape[0]
+            out_top = (h - zoom_in.shape[0]) // 2
+            oh = zoom_in.shape[0]
+        if zoom_in.shape[1] >= w:
+            zoom_left = (zoom_in.shape[1] - w) // 2
+            sw = w
+            out_left = 0
+            ow = w
+        else:
+            zoom_left = 0
+            sw = zoom_in.shape[1]
+            out_left = (w - zoom_in.shape[1]) // 2
+            ow = zoom_in.shape[1]
+
+        out = np.zeros_like(img)
+        out[out_top:out_top + oh, out_left:out_left + ow] = zoom_in[zoom_top:zoom_top + sh, zoom_left:zoom_left + sw]
 
     # If zoom_factor == 1, just return the input array
     else:
@@ -184,32 +189,9 @@ def clipped_zoom(img, zoom_factor, **kwargs):
     return out
 
 
-class Shear(object):
-    def __init__(self, shear):
-        self.shear = random.uniform(0, shear)
-
-    def __call__(self, data):
-        image, label = data['image'], data['label']
-
-        if random.random() < 0.5:
-            image = np.array(image)
-            label = np.array(label)
-
-            affine_tf = tf.AffineTransform(shear=self.shear)
-            shear_image = tf.warp(image, inverse_map=affine_tf)
-            shear_label = tf.warp(label, inverse_map=affine_tf)
-
-            shear_image = Image.fromarray(shear_image.astype('uint8'), 'RGB')
-            shear_label = Image.fromarray(shear_label.astype('uint8'), 'L')
-
-            return {'image': shear_image, 'label': shear_label}
-
-        return {'image': image, 'label': label}
-
-
 class Translation(object):
     def __init__(self, translation):
-        self.translation = random.uniform(0, translation)
+        self.translation = translation
 
     def __call__(self, data):
         image, label = data['image'], data['label']
@@ -219,8 +201,9 @@ class Translation(object):
             label = np.array(label)
             rows, cols, ch = image.shape
 
-            tr_x = self.translation / 2
-            tr_y = self.translation / 2
+            translation = random.uniform(0, self.translation)
+            tr_x = translation / 2
+            tr_y = translation / 2
             Trans_M = np.float32([[1, 0, tr_x], [0, 1, tr_y]])
 
             translate_image = cv2.warpAffine(image, Trans_M, (cols, rows))

@@ -25,7 +25,7 @@ class kvasir_SEG(Dataset):
                    RandomHorizontalFlip(),
                    RandomVerticalFlip(),
                    RandomRotation(90),
-                   RandomZoom(1.2),
+                   RandomZoom((0.9, 1.1)),
                    #Translation(10),
                    RandomCrop((224, 224)),
                    ToTensor(),
